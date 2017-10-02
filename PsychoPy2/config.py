@@ -9,6 +9,9 @@ trial_clock = None
 trial_nr = 0
 stim_id = 0
 
+visual_stimuli = {}
+sound_stimuli = {}
+
 
 def increase_trial(id):
     global trial_nr, stim_id
