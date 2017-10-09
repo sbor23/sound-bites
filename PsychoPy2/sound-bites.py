@@ -4,7 +4,7 @@ from os.path import join, getsize
 from random import randint, sample, choice, shuffle, seed
 
 from psychopy import core, event, gui, sound
-from psychopy.visual import Window, TextStim, ImageStim, Rect, GratingStim, BaseVisualStim
+from psychopy.visual import Window, TextStim, ImageStim, Rect, GratingStim, BaseVisualStim, RatingScale
 from psychopy.constants import FINISHED, STARTED, NOT_STARTED
 
 from choice_screen import ChoiceScreen
@@ -106,19 +106,31 @@ SOUNDS_PATH = 'resources/sounds/exp1/'
 INSTR_PATH = 'resources/instructions/'
 VISUALS_PATH = 'resources/search_arrays/exp1/'
 
+SOUNDS = ['clucking_hen.wav',
+          'fire_alarm.wav',
+          'growling_dog.wav',
+          'microwave_oven.wav']
 expInfo = {'VPN': '', 'Geschlecht': ''}
 window = None
 mouse = None
 
 searchStims = dict()
+va_sounds = list()
 
 
 def create_sound_stimuli():
-    config.sound_stimuli = {s: sound.Sound(value=SOUNDS_PATH + s) for s in
-              ['clucking_hen.wav',
-               'fire_alarm.wav',
-               'growling_dog.wav',
-               'microwave_oven.wav']}
+    config.sound_stimuli = {s: sound.Sound(value=SOUNDS_PATH + s, name=s) for s in SOUNDS}
+
+
+def create_ratingscales():
+    config.ratingscales = [RatingScale(win=window, name='valence_rating', scale=u'Wie fühlen Sie sich gerade?',
+                                       labels=('negativ', 'positiv'),
+                                       stretch=2, pos=[0.0, -0.4], low=0, high=1, precision=100, showValue=False,
+                                       markerExpansion=0, acceptText='Weiter', textColor='black'),
+                           RatingScale(win=window, name='arousal_rating', scale=u'Wie fühlen Sie sich gerade?',
+                                       labels=('niedrige Aktivierung', 'hohe Aktivierung'),
+                                       stretch=2, pos=[0.0, -0.4], low=0, high=1, precision=100, showValue=False,
+                                       markerExpansion=0, acceptText='Weiter', textColor='black')]
 
 
 def create_visual_stimuli():
@@ -143,7 +155,33 @@ def create_visual_stimuli():
             ori = ori[0].lower()  # only look at orientation: L3 -> l, R4 -> r
 
             config.visual_stimuli[sal][pos][ori].append(
-                SearchStim(window=window, image=VISUALS_PATH + f, name=f[:-4]))
+                SearchStim(window=window, image=VISUALS_PATH + f, name=f))
+
+
+def block_va_ratings():
+    config.log_append("StartVARatings", "", "")
+    for s in va_sounds:
+        config.increase_trial(s.name)
+        config.log_append("DisplayFixation", "", "")
+        sound_played = False
+
+        # fixation
+        while config.trial_clock.getTime() < 0.5 + s.duration:
+            if config.trial_clock.getTime() >= 0.5 and not sound_played:
+                sound_played = True
+                s.play()
+            fixation.draw()
+            window.flip()
+
+        # ratings
+        for r in config.ratingscales:
+            r.reset()
+
+            # draw scale
+            while r.status != FINISHED:
+                r.draw()
+                window.flip()
+            config.log_append("Rating", r.getRating(), r.getRT())
 
 
 def save():
@@ -186,23 +224,22 @@ if __name__ == '__main__':
 
 
     # first create all stimuli once
+    fixation = GratingStim(win=window, tex=None, mask='gauss', sf=0, size=15,
+                           name='fixation', autoLog=False, units='pix', pos=(0.0, 0.0), color="Black")
     create_sound_stimuli()
     create_visual_stimuli()
+    create_ratingscales()
 
-    # then randomly assign them to blocks
-
-
-
+    # create random blocks
+    # ratings: random sound order
+    shuffle(SOUNDS)
+    va_sounds = [config.sound_stimuli[k] for k in SOUNDS[:]]
 
     config.exp_clock = core.Clock()
+    config.trial_clock = core.Clock()
 
-
-
-    while testStim.status != FINISHED:
-        testStim.draw()
-        window.flip()
-
-    print "Response was: " + testStim.response
+    # get sound ratings
+    block_va_ratings()
 
 
 
