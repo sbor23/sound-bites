@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import os, csv, time, sys
+import os, csv, time, sys, random
 from os.path import join, getsize
-from random import randint, sample, choice, shuffle, seed
 
 from psychopy import core, event, gui, sound
 from psychopy.visual import Window, TextStim, ImageStim, Rect, GratingStim, BaseVisualStim, RatingScale
@@ -56,16 +55,19 @@ class SearchStim(BaseVisualStim):
         self.stim = ImageStim(win=window, image=image, interpolate=True)
 
         self.clock = core.Clock()
+        self.status = NOT_STARTED
         self.firstDraw = True
-        self.noResponse = True
         self.respKeys = ['left', 'right']
         self.response = None  # will be 'left' or 'right'
         self.rt = None
 
         self.reset()
 
+    def __str__(self):
+        return "SearchStim: " + self.name
+
     def reset(self):
-        self.noResponse = True
+        self.status = NOT_STARTED
         self.firstDraw = True
         self.clock.reset()
         self.response = None    # will be 'left' or 'right'
@@ -74,17 +76,30 @@ class SearchStim(BaseVisualStim):
     def draw(self):
         if self.firstDraw:
             self.firstDraw = False
-            self.clock.reset()
             self.status = STARTED
+            event.clearEvents('keyboard')
+            self.clock.reset()
 
         # check for keys
         for key in event.getKeys():
             print(key)
             if key in self.respKeys:
                 self.response = key
+                self.rt = self.clock.getTime()
                 self.status = FINISHED
-
         self.stim.draw()
+
+    def getResponse(self):
+        if not self.status == FINISHED:
+            raise "SearchStim not completed yet"
+        else:
+            return self.response
+
+    def getRT(self):
+        if not self.status == FINISHED:
+            raise "SearchStim not completed yet"
+        else:
+            return self.rt
 
 # Ensure that relative paths start from the same directory as this script
 _thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
@@ -111,11 +126,16 @@ SOUNDS = ['clucking_hen.wav',
           'growling_dog.wav',
           'microwave_oven.wav']
 expInfo = {'VPN': '', 'Geschlecht': ''}
+
+# some global objects
 window = None
 mouse = None
-
 searchStims = dict()
 va_sounds = list()
+
+va_stimuli = None
+vo_stimuli = None
+fixation = None
 
 
 def create_sound_stimuli():
@@ -155,10 +175,11 @@ def create_visual_stimuli():
             ori = ori[0].lower()  # only look at orientation: L3 -> l, R4 -> r
 
             config.visual_stimuli[sal][pos][ori].append(
-                SearchStim(window=window, image=VISUALS_PATH + f, name=f))
+                SearchStim(window=window, name=f, image=VISUALS_PATH + f))
 
 
 def block_va_ratings():
+    config.increase_block()
     config.log_append("StartVARatings", "", "")
     for s in va_sounds:
         config.increase_trial(s.name)
@@ -182,6 +203,37 @@ def block_va_ratings():
                 r.draw()
                 window.flip()
             config.log_append("Rating", r.getRating(), r.getRT())
+
+
+def block_va_search():
+    config.increase_block()
+    config.log_append("StartVASearch", "", "")
+    for va in va_stimuli:
+        va_sound = va.keys()[0]
+        va_stim = va.values()[0]
+        config.increase_trial("VA-%s-%s" % (va_sound, va_stim.name))
+        config.log_append("DisplayFixation", "", "")
+        va_stim.reset()
+        sound_played = False
+
+        # fixation
+        while config.trial_clock.getTime() < 0.5 + config.sound_stimuli[va_sound].duration:
+            if config.trial_clock.getTime() >= 0.5 and not sound_played:
+                print("trial clock: %f, duration: %f" %
+                      (config.trial_clock.getTime(), 0.5 + config.sound_stimuli[va_sound].duration))
+
+                sound_played = True
+                config.sound_stimuli[va_sound].play()
+            fixation.draw()
+            window.flip()
+
+        # search task
+        while va_stim.status != FINISHED:
+            va_stim.draw()
+            window.flip()
+        print("%s has finished resp: %s, rt: %f" % (va_stim.name, va_stim.getResponse(), va_stim.getRT()))
+        config.log_append("SearchResponse", va_stim.getResponse(), va_stim.getRT())
+
 
 
 def save():
@@ -230,16 +282,47 @@ if __name__ == '__main__':
     create_visual_stimuli()
     create_ratingscales()
 
-    # create random blocks
+    ### create random blocks
     # ratings: random sound order
-    shuffle(SOUNDS)
+    random.shuffle(SOUNDS)
     va_sounds = [config.sound_stimuli[k] for k in SOUNDS[:]]
+
+    # va: for each sound - pick one of each combination
+    # -> 8 combinations
+    va_stimuli = []
+    for sal in ['L1', 'L2']:
+        for pos in ['cen', 'per']:
+            for ori in ['l', 'r']:
+                for snd in SOUNDS:
+                    # get random stimuli of given category
+                    va_stimuli.append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
+    # randomize visuals order
+    random.shuffle(va_stimuli)
+
+    for i in va_stimuli:
+        print("sound: %s,\tstim: %s" % (i.keys()[0], i.values()[0].name))
+
+    # vo: pick four of each combination
+    # -> 8 combinations
+    vo_stimuli = []
+    for sal in ['L1', 'L2']:
+        for pos in ['cen', 'per']:
+            for ori in ['l', 'r']:
+                for _ in xrange(4):
+                    vo_stimuli.append(random.choice(config.visual_stimuli[sal][pos][ori]))
+    # randomize visuals order
+    random.shuffle(vo_stimuli)
+
+    for i in vo_stimuli:
+        print("stim: %s" % i)
+
 
     config.exp_clock = core.Clock()
     config.trial_clock = core.Clock()
 
     # get sound ratings
-    block_va_ratings()
+    #block_va_ratings()
+    block_va_search()
 
 
 
@@ -283,8 +366,8 @@ if __name__ == '__main__':
 # )
 #
 # # generate random order
-# shuffle(free_condition_sequence)
-# shuffle(exp_sequence)
+# random.shuffle(free_condition_sequence)
+# random.shuffle(exp_sequence)
 #
 # # create clocks
 # config.exp_clock = core.Clock()
