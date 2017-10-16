@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-import os, csv, time, sys, random
+import os, csv, time, sys, random, copy
 from os.path import join, getsize
 
 from psychopy import core, event, gui, sound
 from psychopy.visual import Window, TextStim, ImageStim, Rect, GratingStim, BaseVisualStim, RatingScale
 from psychopy.constants import FINISHED, STARTED, NOT_STARTED
 
-from choice_screen import ChoiceScreen
-from operations_screen import OperationScreen
 import config
 from utils import from_csv
 
@@ -202,7 +200,7 @@ def block_va_ratings():
             while r.status != FINISHED:
                 r.draw()
                 window.flip()
-            config.log_append("Rating", r.getRating(), r.getRT())
+            config.log_append(r.name, r.getRating(), r.getRT())
 
 
 def block_va_search():
@@ -271,6 +269,22 @@ def save():
         writer.writeheader()
         writer.writerows(config.resp_data)
 
+def count_other_sounds(snd, dic):
+    assert(isinstance(dic, dict))
+
+    other_snds = set(SOUNDS) - set([snd])
+    count = 0
+    for s in other_snds:
+        count += len(dic[s])
+    return count
+
+
+def copy_dict_list(input):
+    ret = {}
+    for k in input.keys():
+        ret[k] = input[k][:]
+    return ret
+
 
 ### Construct experiment
 if __name__ == '__main__':
@@ -287,7 +301,7 @@ if __name__ == '__main__':
         core.quit()
 
     # Create output file
-    fileName = OUTPUT_PATH + expInfo['VPN'] + '_' + time.strftime("%Y%m%d-%H%M%S") + '_mousetracking.csv'
+    fileName = OUTPUT_PATH + expInfo['VPN'] + '_' + time.strftime("%Y%m%d-%H%M%S") + '_sound-bites.csv'
 
     # create window and mouse objects
     window = Window((XRES, YRES), allowGUI=False, color=LIGHTGREY, fullscr=False,
@@ -310,17 +324,49 @@ if __name__ == '__main__':
     # va: for each sound - pick one of each combination
     # -> 8 combinations
     va_stimuli = []
+    sound_stimuli = {}
+    #backup = {}
     for sal in ['L1', 'L2']:
         for pos in ['cen', 'per']:
             for ori in ['l', 'r']:
                 for snd in SOUNDS:
                     # get random stimuli of given category
-                    va_stimuli.append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
-    # randomize visuals order
-    random.shuffle(va_stimuli)
+                    if not snd in sound_stimuli.keys():
+                        sound_stimuli[snd] = list()
+                        #backup[snd] = list()
+                    sound_stimuli[snd].append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
+                    #backup[snd].append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
 
-    for i in va_stimuli:
-        print("sound: %s,\tstim: %s" % (i.keys()[0], i.values()[0].name))
+    # randomize order, same sounds never in succession
+    backup = copy_dict_list(sound_stimuli)
+    for snd in SOUNDS:
+        random.shuffle(sound_stimuli[snd])
+    last_snd = None
+    restart_count = 0
+
+    print "Start randomizing, this can take a while..."
+    start_time = time.time()
+    while len(va_stimuli) < 32:
+        snd = random.choice(SOUNDS)
+
+        # store stim if there are any left of this sound
+        if not snd == last_snd and len(sound_stimuli[snd]) > 0:
+            last_snd = snd
+            va_stimuli.append(sound_stimuli[snd].pop(0))
+        # restart if only one sound is left and it's the same as last_sound
+        elif snd == last_snd and count_other_sounds(snd, sound_stimuli) == 0:
+            last_snd = None
+            va_stimuli = []
+            restart_count += 1
+            sound_stimuli = copy_dict_list(backup)
+
+        # one run takes ~1ms on this system, so allow at most 1s = 1000 runs
+        if restart_count > 1000:
+            sys.exit("Randomization did not succeed")
+    print "Finished randomizing, taking %i restarts in %s seconds" % (restart_count, time.time() - start_time)
+
+    # for i in va_stimuli:
+    #     print("sound: %s,\tstim: %s" % (i.keys()[0], i.values()[0].name))
 
     # vo: pick four of each combination
     # -> 8 combinations
