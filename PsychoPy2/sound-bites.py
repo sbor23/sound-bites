@@ -235,10 +235,30 @@ def block_va_search():
         config.log_append("SearchResponse", va_stim.getResponse(), va_stim.getRT())
 
 
+def block_vo_search():
+    config.increase_block()
+    config.log_append("StartVoSearch", "", "")
+    for vo in vo_stimuli:
+        config.increase_trial("VO-%s" % vo.name)
+        config.log_append("DisplayFixation", "", "")
+        vo.reset()
+
+        # fixation
+        while config.trial_clock.getTime() < 1:
+            fixation.draw()
+            window.flip()
+
+        # search task
+        while vo.status != FINISHED:
+            vo.draw()
+            window.flip()
+        print("%s has finished resp: %s, rt: %f" % (vo.name, vo.getResponse(), vo.getRT()))
+        config.log_append("SearchResponse", vo.getResponse(), vo.getRT())
+
 
 def save():
     # add experiment info to log entries
-    [config.resp_data[i].update({'respondent': expInfo['VPN'], 'sex': expInfo['Geschlecht'], 'condition': expInfo['condition']})
+    [config.resp_data[i].update({'respondent': expInfo['VPN'], 'sex': expInfo['Geschlecht']})
      for i in range(len(config.resp_data))]
     # encode everything as unicode
     config.resp_data = [
@@ -321,10 +341,11 @@ if __name__ == '__main__':
     config.trial_clock = core.Clock()
 
     # get sound ratings
-    #block_va_ratings()
+    block_va_ratings()
     block_va_search()
+    block_vo_search()
 
-
+    save()
 
 # # load gambles, set condition
 # # TODO: adjust for data collection
