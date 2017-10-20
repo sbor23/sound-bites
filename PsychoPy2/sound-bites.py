@@ -59,6 +59,8 @@ class SearchStim(BaseVisualStim):
         self.response = None  # will be 'left' or 'right'
         self.rt = None
 
+        self.too_slow_box = Rect(win=window, width=200, height=120, fillColor=LIGHTGREY)
+        self.too_slow_text = TextStim(win=window, text="Zu langsam", color='black')
         self.reset()
 
     def __str__(self):
@@ -78,14 +80,27 @@ class SearchStim(BaseVisualStim):
             event.clearEvents('keyboard')
             self.clock.reset()
 
+        # enforce timeout of 3.5s
+        elif self.clock.getTime() > 3.5 and self.status != TIMEOUT:
+            self.status = TIMEOUT
+
+        # stop prematurely
+        elif self.clock.getTime() > 5:
+            self.status = FINISHED
+
         # check for keys
-        for key in event.getKeys():
-            print(key)
-            if key in self.respKeys:
-                self.response = key
-                self.rt = self.clock.getTime()
-                self.status = FINISHED
+        if self.status == STARTED:
+            for key in event.getKeys():
+                print(key)
+                if key in self.respKeys:
+                    self.response = key
+                    self.rt = self.clock.getTime()
+                    self.status = FINISHED
         self.stim.draw()
+
+        if self.status == TIMEOUT:
+            self.too_slow_box.draw()
+            self.too_slow_text.draw()
 
     def getResponse(self):
         if not self.status == FINISHED:
@@ -119,10 +134,11 @@ SOUNDS_PATH = 'resources/sounds/exp1/'
 INSTR_PATH = 'resources/instructions/'
 VISUALS_PATH = 'resources/search_arrays/exp1/'
 
-SOUNDS = ['clucking_hen.wav',
-          'fire_alarm.wav',
-          'growling_dog.wav',
-          'microwave_oven.wav']
+SOUNDS = ['cluckinghen.wav',
+          'firealarm.wav',
+          'growlingdog.wav',
+          'microwaveoven.wav']
+TIMEOUT = 3  # stimulus state constant
 expInfo = {'VPN': '', 'Geschlecht': ''}
 
 # some global objects
@@ -144,11 +160,11 @@ def create_ratingscales():
     config.ratingscales = [RatingScale(win=window, name='valence_rating', scale=u'Wie fühlen Sie sich gerade?',
                                        labels=('negativ', 'positiv'),
                                        stretch=2, pos=[0.0, -0.4], low=0, high=1, precision=100, showValue=False,
-                                       markerExpansion=0, acceptText='Weiter', textColor='black'),
+                                       markerExpansion=0, acceptText='Weiter', textColor='white'),
                            RatingScale(win=window, name='arousal_rating', scale=u'Wie fühlen Sie sich gerade?',
                                        labels=('niedrige Aktivierung', 'hohe Aktivierung'),
                                        stretch=2, pos=[0.0, -0.4], low=0, high=1, precision=100, showValue=False,
-                                       markerExpansion=0, acceptText='Weiter', textColor='black')]
+                                       markerExpansion=0, acceptText='Weiter', textColor='white')]
 
 
 def create_visual_stimuli():
@@ -229,9 +245,13 @@ def block_va_search():
         while va_stim.status != FINISHED:
             va_stim.draw()
             window.flip()
-        print("%s has finished resp: %s, rt: %f" % (va_stim.name, va_stim.getResponse(), va_stim.getRT()))
         config.log_append("SearchResponse", va_stim.getResponse(), va_stim.getRT())
 
+        # 3s empty screen
+        emptyscreen_clock = core.Clock()
+        print(emptyscreen_clock.getTime())
+        while emptyscreen_clock.getTime() < 3:
+            window.flip()
 
 def block_vo_search():
     config.increase_block()
@@ -250,8 +270,12 @@ def block_vo_search():
         while vo.status != FINISHED:
             vo.draw()
             window.flip()
-        print("%s has finished resp: %s, rt: %f" % (vo.name, vo.getResponse(), vo.getRT()))
         config.log_append("SearchResponse", vo.getResponse(), vo.getRT())
+
+        # 3s empty screen
+        emptyscreen_clock = core.Clock()
+        while emptyscreen_clock.getTime() > 3:
+            window.flip()
 
 
 def save():
@@ -304,14 +328,14 @@ if __name__ == '__main__':
     fileName = OUTPUT_PATH + expInfo['VPN'] + '_' + time.strftime("%Y%m%d-%H%M%S") + '_sound-bites.csv'
 
     # create window and mouse objects
-    window = Window((XRES, YRES), allowGUI=False, color=LIGHTGREY, fullscr=False,
+    window = Window((XRES, YRES), allowGUI=False, color='black', fullscr=False,
                     monitor='testMonitor', winType='pyglet', units='pix')
     mouse = event.Mouse(win=window)
 
 
     # first create all stimuli once
     fixation = GratingStim(win=window, tex=None, mask='gauss', sf=0, size=15,
-                           name='fixation', autoLog=False, units='pix', pos=(0.0, 0.0), color="Black")
+                           name='fixation', autoLog=False, units='pix', pos=(0.0, 0.0), color="white")
     create_sound_stimuli()
     create_visual_stimuli()
     create_ratingscales()
@@ -388,6 +412,8 @@ if __name__ == '__main__':
 
     # get sound ratings
     block_va_ratings()
+    window.setColor('black')
+    fixation.setColor('white')
     block_va_search()
     block_vo_search()
 
