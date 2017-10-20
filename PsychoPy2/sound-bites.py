@@ -192,9 +192,9 @@ def create_visual_stimuli():
                 SearchStim(window=window, name=f, image=VISUALS_PATH + f))
 
 
-def block_va_ratings():
-    config.increase_block()
-    config.log_append("StartVARatings", "", "")
+def block_sound_ratings():
+    config.increase_block("Ratings")
+    config.log_append("StartBlockRatings", "", "")
     for s in va_sounds:
         config.increase_trial(s.name)
         config.log_append("DisplayFixation", "", "")
@@ -220,12 +220,12 @@ def block_va_ratings():
 
 
 def block_va_search():
-    config.increase_block()
-    config.log_append("StartVASearch", "", "")
+    config.increase_block("VA")
+    config.log_append("StartBlockVA", "", "")
     for va in va_stimuli:
         va_sound = va.keys()[0]
         va_stim = va.values()[0]
-        config.increase_trial("VA-%s-%s" % (va_sound, va_stim.name))
+        config.increase_trial("%s-%s" % (va_sound, va_stim.name))
         config.log_append("DisplayFixation", "", "")
         va_stim.reset()
         sound_played = False
@@ -249,15 +249,14 @@ def block_va_search():
 
         # 3s empty screen
         emptyscreen_clock = core.Clock()
-        print(emptyscreen_clock.getTime())
         while emptyscreen_clock.getTime() < 3:
             window.flip()
 
 def block_vo_search():
-    config.increase_block()
-    config.log_append("StartVoSearch", "", "")
+    config.increase_block("VO")
+    config.log_append("StartBlockVO", "", "")
     for vo in vo_stimuli:
-        config.increase_trial("VO-%s" % vo.name)
+        config.increase_trial(vo.name)
         config.log_append("DisplayFixation", "", "")
         vo.reset()
 
@@ -274,7 +273,7 @@ def block_vo_search():
 
         # 3s empty screen
         emptyscreen_clock = core.Clock()
-        while emptyscreen_clock.getTime() > 3:
+        while emptyscreen_clock.getTime() < 3:
             window.flip()
 
 
@@ -349,7 +348,6 @@ if __name__ == '__main__':
     # -> 8 combinations
     va_stimuli = []
     sound_stimuli = {}
-    #backup = {}
     for sal in ['L1', 'L2']:
         for pos in ['cen', 'per']:
             for ori in ['l', 'r']:
@@ -357,9 +355,7 @@ if __name__ == '__main__':
                     # get random stimuli of given category
                     if not snd in sound_stimuli.keys():
                         sound_stimuli[snd] = list()
-                        #backup[snd] = list()
                     sound_stimuli[snd].append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
-                    #backup[snd].append({snd: random.choice(config.visual_stimuli[sal][pos][ori])})
 
     # randomize order, same sounds never in succession
     backup = copy_dict_list(sound_stimuli)
@@ -403,126 +399,24 @@ if __name__ == '__main__':
     # randomize visuals order
     random.shuffle(vo_stimuli)
 
-    for i in vo_stimuli:
-        print("stim: %s" % i)
-
-
     config.exp_clock = core.Clock()
     config.trial_clock = core.Clock()
 
     # get sound ratings
-    block_va_ratings()
-    window.setColor('black')
-    fixation.setColor('white')
-    block_va_search()
-    block_vo_search()
+    block_sound_ratings()
+    #window.setColor('black')
+    #fixation.setColor('white')
 
+    # flip a coin with which task to start...
+    startVA = random.choice([True, False])
+    if startVA:
+        block_va_search()
+        block_va_search()
+        block_vo_search()
+    else:
+        block_vo_search()
+        block_va_search()
+        block_va_search()
+
+    # save logged results
     save()
-
-# # load gambles, set condition
-# # TODO: adjust for data collection
-# gambles = from_csv(RES_PATH, 'Gambles.csv')
-# operations = from_csv(RES_PATH, 'Operationen alle.csv')
-# # gambles = from_csv(RES_PATH, 'samples/gambles_5.csv')
-# # operations = from_csv(RES_PATH, 'samples/operations_5.csv')
-# expInfo['condition'] = 'horizontal'
-#
-# # create fixation stimulus
-# # fixation = GratingStim(win=window, size=20, pos=[0,0], sf=0, rgb=-1)
-# fixation = GratingStim(win=window, tex=None, mask='gauss', sf=0, size=15,
-#                        name='fixation', autoLog=False, units='pix', pos=(0.0, 0.0), color="Black")
-#
-# # create instruction screen for 2. part
-# instr_screen = {}
-# instr_screen['Teil2.1'] = InstructionScreen(window, mouse, image=INSTR_PATH + "Instruktionen Teil 2 Folie 1.png")
-# instr_screen['Teil2.2'] = InstructionScreen(window, mouse, image=INSTR_PATH + "Instruktionen Teil 2 Folie 2.png")
-# instr_screen['Schluss'] = InstructionScreen(window, mouse, image=INSTR_PATH + "Schlusssatz.png")
-#
-# # load instruction sound
-# instr_sound = {}
-# for i in ['instr_erwartungswert', 'instr_grosser', 'instr_kleiner', 'instr_mal', 'instr_minus', 'instr_plus']:
-#     instr_sound[i] = sound.Sound(SOUND_PATH + i + '.wav')
-#     instr_sound[i].setVolume(0.5)
-#
-# # free condition sequence
-# free_condition_sequence = [
-#     ChoiceScreen(win=window, mouse=mouse, gamble=gambles[id], stim_id=id, orientation=expInfo['condition'],
-#                  method="click")
-#     for id in gambles.keys()]
-# # create experiment_sequence
-# exp_sequence = (
-#     [ChoiceScreen(win=window, mouse=mouse, gamble=gambles[id], stim_id=id, orientation=expInfo['condition'],
-#                   method="click")
-#      for id in gambles.keys()] +
-#     [OperationScreen(win=window, mouse=mouse, operation=operations[id], stim_id=id, method='click')
-#      for id in operations.keys()]
-# )
-#
-# # generate random order
-# random.shuffle(free_condition_sequence)
-# random.shuffle(exp_sequence)
-#
-# # create clocks
-# config.exp_clock = core.Clock()
-# config.trial_clock = core.Clock()
-#
-# ### Experiment loop
-# # "free condition": display only choice screens
-# config.log_append("StartFreeCondition", "")
-#
-# for screen in free_condition_sequence:
-#     sound_played = False
-#     config.increase_trial(screen.stim_id)
-#     config.log_append("DisplayFixation", "")
-#
-#     # fixation
-#     while config.trial_clock.getTime() < 5:
-#         fixation.draw()
-#         window.flip()
-#
-#     # choice screen: contains own loop
-#     screen.display()
-#
-# # instruction slides for main experiment
-# config.log_append("InstructionTeil2", "")
-# instr_screen['Teil2.1'].display()
-# instr_screen['Teil2.2'].display()
-#
-# # main experiment: display all them screens
-# config.log_append("StartMainExperiment", "")
-#
-# for screen in exp_sequence:
-#     sound_played = False
-#     config.increase_trial(screen.stim_id)
-#     config.log_append("DisplayFixation", "")
-#
-#     # first fixation , after 1s the instruction sound
-#     while config.trial_clock.getTime() < 5:
-#         fixation.draw()
-#         window.flip()
-#         if config.trial_clock.getTime() >= 1 and not sound_played:
-#             if isinstance(screen, ChoiceScreen):
-#                 i = 'instr_erwartungswert'
-#                 instr_sound[i].play()
-#                 core.wait(instr_sound[i].duration)
-#             elif isinstance(screen, OperationScreen):
-#                 if screen.get_operation_type() == '+':
-#                     i = 'instr_plus'
-#                 elif screen.get_operation_type() == '-':
-#                     i = 'instr_minus'
-#                 elif screen.get_operation_type() == '*':
-#                     i = 'instr_mal'
-#                 elif screen.get_operation_type() == '>':
-#                     i = 'instr_grosser'
-#                 instr_sound[i].play()
-#                 core.wait(instr_sound[i].duration)
-#             sound_played = True
-#
-#     screen.display()
-#
-# # end instruction
-# config.log_append("InstructionSchluss", "")
-# instr_screen['Schluss'].display()
-#
-#
-

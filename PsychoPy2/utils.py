@@ -28,7 +28,3 @@ def from_csv(path, file):
             rownr = rownr + 1
 
     return ret
-
-class Screen:
-    def display(self):
-        return

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # global log_fields, resp_data, exp_clock, trial_clock, stim_id
 
-log_fields = ['exp_clock', 'trial_clock', 'block_nr', 'trial_nr', 'stim_id', 'event', 'value', 'responseTime']
+log_fields = ['exp_clock', 'trial_clock', 'block', 'block_nr', 'trial_nr', 'stim_id', 'event', 'value', 'responseTime']
 resp_data = []
 
 exp_clock = None
 trial_clock = None
+block = None
 block_nr = 0
 trial_nr = 0
 stim_id = 0
@@ -22,15 +23,17 @@ def increase_trial(id):
     trial_clock.reset()
 
 
-def increase_block():
-    global block_nr
+def increase_block(block_name):
+    global block_nr, block, trial_nr
+    block = block_name
     block_nr = block_nr + 1
+    trial_nr = 0
 
 
 def log_append(event, value, responseTime):
     combined = dict(
         zip(log_fields,
-            [exp_clock.getTime(), trial_clock.getTime(), block_nr, trial_nr, stim_id, event,
+            [exp_clock.getTime(), trial_clock.getTime(), block, block_nr, trial_nr, stim_id, event,
              value, responseTime]))
     resp_data.append(combined)
     print combined
