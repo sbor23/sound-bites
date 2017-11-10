@@ -55,7 +55,7 @@ class SearchStim(BaseVisualStim):
         self.clock = core.Clock()
         self.status = NOT_STARTED
         self.firstDraw = True
-        self.respKeys = ['left', 'right']
+        self.respKeys = {'y': 'left', 'period': 'right'}
         self.response = None  # will be 'left' or 'right'
         self.rt = None
 
@@ -91,9 +91,8 @@ class SearchStim(BaseVisualStim):
         # check for keys
         if self.status == STARTED:
             for key in event.getKeys():
-                print(key)
-                if key in self.respKeys:
-                    self.response = key
+                if key in self.respKeys.keys():
+                    self.response = self.respKeys[key]
                     self.rt = self.clock.getTime()
                     self.status = FINISHED
         self.stim.draw()
