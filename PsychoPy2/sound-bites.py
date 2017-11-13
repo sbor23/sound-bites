@@ -113,6 +113,35 @@ class SearchStim(BaseVisualStim):
         else:
             return self.rt
 
+
+class InstructionScreen:
+    """
+    This is a class for instructions only. Text stays up
+    until a key has been pressed.
+    """
+
+    def __init__(self, window, mouse, image):
+        self.window = window
+        self.mouse = mouse
+        self.instruction = ImageStim(win=window, image=image, interpolate=True)  # , size=(800, 800))
+        # self.instruction = TextStim(self.window, text=self.text, color='black',
+        #                                font='Helvetica', wrapWidth=.9 * self.window.size[0])
+
+        self.next = Rect(self.window, width=75, height=50, pos=(0, -self.window.size[1] / 2 + 50),
+                         fillColor='blue')
+        self.nextText = TextStim(self.window, text='Weiter', height=15, pos=(0, -self.window.size[1] / 2 + 50),
+                                 color='white')
+
+    def display(self):
+        self.mouse.clickReset(buttons=(0, 1, 2))
+        instr_timer = core.Clock()
+        while True:
+            self.instruction.draw()
+            self.next.draw()
+            self.nextText.draw()
+            self.window.flip()
+            if self.mouse.isPressedIn(self.next) and instr_timer.getTime() > 2:
+                break
 # Ensure that relative paths start from the same directory as this script
 _thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
 os.chdir(_thisDir)
@@ -130,7 +159,7 @@ LIGHTGREY = [0.5, 0.5, 0.5]
 RES_PATH = 'resources/'
 OUTPUT_PATH = 'output/'
 SOUNDS_PATH = 'resources/sounds/exp1/'
-INSTR_PATH = 'resources/instructions/'
+INSTR_PATH = 'resources/instruction/'
 VISUALS_PATH = 'resources/search_arrays/exp1/'
 
 SOUNDS = ['cluckinghen.wav',
@@ -326,10 +355,12 @@ if __name__ == '__main__':
     fileName = OUTPUT_PATH + expInfo['VPN'] + '_' + time.strftime("%Y%m%d-%H%M%S") + '_sound-bites.csv'
 
     # create window and mouse objects
-    window = Window((XRES, YRES), allowGUI=False, color='black', fullscr=False,
+    window = Window((XRES, YRES), allowGUI=False, color='black', fullscr=True,
                     monitor='testMonitor', winType='pyglet', units='pix')
     mouse = event.Mouse(win=window)
 
+    # create instruction
+    instruction = InstructionScreen(window=window, mouse=mouse, image=INSTR_PATH + "instruction.png")
 
     # first create all stimuli once
     fixation = GratingStim(win=window, tex=None, mask='gauss', sf=0, size=15,
@@ -403,8 +434,9 @@ if __name__ == '__main__':
 
     # get sound ratings
     block_sound_ratings()
-    #window.setColor('black')
-    #fixation.setColor('white')
+
+    # display instruction
+    instruction.display()
 
     # flip a coin with which task to start...
     startVA = random.choice([True, False])
