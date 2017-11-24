@@ -229,7 +229,7 @@ def block_sound_ratings():
         sound_played = False
 
         # fixation
-        while config.trial_clock.getTime() < 0.5 + s.duration:
+        while config.trial_clock.getTime() < 0.5 + s.getDuration():
             if config.trial_clock.getTime() >= 0.5 and not sound_played:
                 sound_played = True
                 s.play()
@@ -259,10 +259,10 @@ def block_va_search():
         sound_played = False
 
         # fixation
-        while config.trial_clock.getTime() < 0.5 + config.sound_stimuli[va_sound].duration:
+        while config.trial_clock.getTime() < 0.5 + config.sound_stimuli[va_sound].getDuration():
             if config.trial_clock.getTime() >= 0.5 and not sound_played:
                 print("trial clock: %f, duration: %f" %
-                      (config.trial_clock.getTime(), 0.5 + config.sound_stimuli[va_sound].duration))
+                      (config.trial_clock.getTime(), 0.5 + config.sound_stimuli[va_sound].getDuration()))
 
                 sound_played = True
                 config.sound_stimuli[va_sound].play()
