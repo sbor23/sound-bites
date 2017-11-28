@@ -3,8 +3,10 @@
 
 # clean slate
 rm(list = ls())
+require(tidyverse)
 source("R_Packages+OwnFunctions.R")
 
+# load raw data
 load("../data/rawdata.Rdata")
 
 
@@ -30,5 +32,6 @@ searches <- searches %>%
   mutate(position = ifelse(grepl("cen", position), "central", "peripheral")) %>%
   mutate(orientation = ifelse(grepl("l", orientation), "left", "right"))
 
+# save data frames
 save(ratings, file = "../data/ratings.Rdata")
 save(searches, file = "../data/searches.Rdata")

@@ -3,12 +3,11 @@
 
 # clean slate
 rm(list = ls())
-source("R_Packages+OwnFunctions.R")
+require(tidyverse)
 
 
 ### Data import from csv files ###
 # get list of all data files
-# Note: data copy-pasted from PsychoPy console is excluded, moved to rawdat_copy-paste
 # See Exp_Bemerkungen.xlsx
 filelist <- list.files(path = "../data/rawdata/", full.names = TRUE)
 

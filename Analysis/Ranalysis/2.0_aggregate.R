@@ -3,20 +3,27 @@
 
 # clean slate
 rm(list = ls())
-source("R_Packages+OwnFunctions.R")
+require(tidyverse)
 
+# load data
 load("../data/ratings.Rdata")
 load("../data/searches.Rdata")
 
+# plot rating across audiory stimuli
+ggplot(ratings, aes(stim_id, value, colour = event)) +
+  stat_summary(fun.y = mean, geom = "point") +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.1) + 
+  facet_grid(. ~ event)
 
-# summarise the rating values
-ratings <- ratings %>%
-  group_by(stim_id, event) %>%
-  summarise(
-    val = mean(value)
-  )
+# reorder factor to represent Figure 2 order of Asutay et al., 2017
 
-### ....
+searches$sound <- fct_relevel(searches$sound, "firealarm", "growlingdog", "cluckinghen", "microwaveoven")
+# plot response time across audiory stimuli
+ggplot(searches, aes(sound, responseTime, colour = salience)) +
+  stat_summary(fun.y = mean, geom = "point") +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.1) + 
+  facet_grid(salience ~ ., scales = "free")
+
 
 
 ### export as csv
