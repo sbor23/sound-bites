@@ -22,9 +22,10 @@ searches$sound <- fct_relevel(searches$sound, "firealarm", "growlingdog", "cluck
 ggplot(searches, aes(sound, responseTime, colour = salience)) +
   stat_summary(fun.y = mean, geom = "point") +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.1) + 
-  facet_grid(salience ~ ., scales = "free")
+  facet_grid(salience ~ ., scales = "free") +
+  theme_minimal(base_family = 'mono', base_size = 10)
 
-
+ggsave('../plots/Rep_Figure2B.png')
 
 ### export as csv
 write.table(durations, file = "../data/output/durations.csv",
