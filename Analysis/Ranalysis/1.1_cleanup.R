@@ -28,7 +28,7 @@ searches <- rawdata %>%
 # orientation: l[..] = left, r[..] = right
 searches <- searches %>%
   separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
-  mutate(salience = ifelse(salience == "L1", "low", "high")) %>%
+  mutate(salience = ifelse(salience == "L1", "high", "low")) %>%
   mutate(position = ifelse(grepl("cen", position), "central", "peripheral")) %>%
   mutate(orientation = ifelse(grepl("l", orientation), "left", "right"))
 
