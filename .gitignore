@@ -41,6 +41,6 @@ tmtagsHistory
 .bundle
 
 # CUSTOM
-test.py
 .Rproj.user
 *.Rdata
+.Rhistory
