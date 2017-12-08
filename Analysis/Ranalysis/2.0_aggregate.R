@@ -13,7 +13,10 @@ load("../data/searches.Rdata")
 ggplot(ratings, aes(reorder(stim_id, value), value, colour = event)) +
   stat_summary(fun.y = mean, geom = "point") +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = 0.1) + 
-  facet_grid(. ~ event)
+  facet_grid(. ~ event) +
+  theme_minimal(base_family = 'mono', base_size = 10)
+
+ggsave('../plots/Rep_Figure2A.png')
 
 # reorder factor to represent Figure 2 order of Asutay et al., 2017
 searches$sound <- fct_relevel(searches$sound, "firealarm", "growlingdog", "cluckinghen", "microwaveoven")
@@ -35,6 +38,7 @@ ggsave('../plots/Rep_Figure2B.png')
     group_by(salience, sound) %>%
     summarise(RT = mean(responseTime, na.rm = TRUE),
               Accuracy = sum(accuracy)/length(accuracy))
+  
 
 ### export as csv
 write.table(durations, file = "../data/output/durations.csv",
