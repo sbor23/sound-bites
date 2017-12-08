@@ -29,22 +29,27 @@ searches <- rawdata %>%
 # code "visual only" (ie without sound) into sound variable
 searches <- searches %>%
   separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
-  mutate(salience = ifelse(salience == "L1", "high", "low")) %>%
-  mutate(position = ifelse(grepl("cen", position), "central", "peripheral")) %>%
-  mutate(orientation = ifelse(grepl("l", orientation), "left", "right")) %>%
-  mutate(sound = ifelse(is.na(sound), "visual only", sound))
-
-# transform RTs into milliseconds
-  searches$responseTime <- searches$responseTime * 1000 
-
-# calculate accuracy
-  searches <- 
-  searches %>%
-    mutate(
-      accuracy = case_when(
-        orientation == value ~ 1,
-        TRUE                 ~ 0
-      ))
+  
+  # recode some values
+  mutate(salience = recode(salience,
+                           L1 = "high",
+                           L2 = "low")) %>%
+  mutate(position = case_when(
+    grepl("cen", position) ~ "central",
+    grepl("per", position) ~ "peripheral")) %>%
+  mutate(orientation = case_when(
+    grepl("[lL]", orientation) ~ "left",
+    grepl("[rR]", orientation) ~ "right")) %>%
+  mutate(sound = ifelse(is.na(sound), "visual only", sound)) %>%
+  
+  # transform RTs into milliseconds
+  mutate(responseTime = responseTime * 1000) %>%
+  
+  # calculate accuracy
+  mutate(accuracy = case_when(
+    orientation == value ~ 1,
+    TRUE                 ~ 0
+  ))
 
 # save data frames
 save(ratings, file = "../data/ratings.Rdata")
