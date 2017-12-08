@@ -4,7 +4,7 @@
 # clean slate
 rm(list = ls())
 require(tidyverse)
-source("R_Packages+OwnFunctions.R")
+#source("R_Packages+OwnFunctions.R")
 
 # load raw data
 load("../data/rawdata.Rdata")
@@ -26,11 +26,25 @@ searches <- rawdata %>%
 # salience: L1 = low, L2 = high
 # position: cen[..] = central, per[..] = peripheral
 # orientation: l[..] = left, r[..] = right
+# code "visual only" (ie without sound) into sound variable
 searches <- searches %>%
   separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
   mutate(salience = ifelse(salience == "L1", "high", "low")) %>%
   mutate(position = ifelse(grepl("cen", position), "central", "peripheral")) %>%
-  mutate(orientation = ifelse(grepl("l", orientation), "left", "right"))
+  mutate(orientation = ifelse(grepl("l", orientation), "left", "right")) %>%
+  mutate(sound = ifelse(is.na(sound), "visual only", sound))
+
+# transform RTs into milliseconds
+  searches$responseTime <- searches$responseTime * 1000 
+
+# calculate accuracy
+  searches <- 
+  searches %>%
+    mutate(
+      accuracy = case_when(
+        orientation == value ~ 1,
+        TRUE                 ~ 0
+      ))
 
 # save data frames
 save(ratings, file = "../data/ratings.Rdata")
