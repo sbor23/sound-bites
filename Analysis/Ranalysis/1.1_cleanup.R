@@ -23,7 +23,7 @@ searches <- rawdata %>%
   separate(stim_id, c("sound", "visual"), sep = "-", fill = "left")
 
 # split stim_id into actual factors of the experiment:
-# salience: L1 = low, L2 = high
+# salience: L1 = high, L2 = low
 # position: cen[..] = central, per[..] = peripheral
 # orientation: l[..] = left, r[..] = right
 # code "visual only" (ie without sound) into sound variable
