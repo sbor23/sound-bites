@@ -4,11 +4,12 @@
 # clean slate
 rm(list = ls())
 require(tidyverse)
-#source("R_Packages+OwnFunctions.R")
 
 # load raw data
 load("../data/rawdata.Rdata")
 
+# remove respondents with NAs
+rawdata <- rawdata[!is.na(rawdata$responseTime),] 
 
 # remove .wav from stim_id
 rawdata$stim_id <- sub("(.*)\\.wav", "\\1", rawdata$stim_id)
@@ -27,10 +28,10 @@ searches <- rawdata %>%
 # position: cen[..] = central, per[..] = peripheral
 # orientation: l[..] = left, r[..] = right
 # code "visual only" (ie without sound) into sound variable
-searches <- searches %>%
-  separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
+  searches <- searches %>%
+    separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
   
-  # recode some values
+# recode some values
   mutate(salience = recode(salience,
                            L1 = "high",
                            L2 = "low")) %>%
@@ -42,15 +43,26 @@ searches <- searches %>%
     grepl("[rR]", orientation) ~ "right")) %>%
   mutate(sound = ifelse(is.na(sound), "visual only", sound)) %>%
   
-  # transform RTs into milliseconds
+# transform RTs into milliseconds
   mutate(responseTime = responseTime * 1000) %>%
   
-  # calculate accuracy
+# calculate accuracy
   mutate(accuracy = case_when(
     orientation == value ~ 1,
     TRUE                 ~ 0
   ))
 
+# check accuracy per participant
+  sum.searches <- 
+  searches %>%
+    group_by(respondent, block_nr) %>%
+    summarise(acc.part = sum(accuracy),
+              acc.perc = 100/32*acc.part)
+
+# remove participants with more than 32 trials
+  sum.searches[sum.searches$acc.part > 32,]
+  
+  
 # save data frames
 save(ratings, file = "../data/ratings.Rdata")
 save(searches, file = "../data/searches.Rdata")
