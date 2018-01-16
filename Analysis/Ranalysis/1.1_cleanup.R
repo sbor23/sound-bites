@@ -11,6 +11,7 @@ load("../data/rawdata.Rdata")
 # remove respondents with NAs
 rawdata <- rawdata[!is.na(rawdata$responseTime),] 
 
+
 # remove .wav from stim_id
 rawdata$stim_id <- sub("(.*)\\.wav", "\\1", rawdata$stim_id)
 
@@ -52,15 +53,21 @@ searches <- rawdata %>%
     TRUE                 ~ 0
   ))
 
-# check accuracy per participant
+  # check accuracy per participant
   sum.searches <- 
-  searches %>%
+    searches %>%
     group_by(respondent, block_nr) %>%
     summarise(acc.part = sum(accuracy),
               acc.perc = 100/32*acc.part)
-
-# remove participants with more than 32 trials
-  sum.searches[sum.searches$acc.part > 32,]
+  
+  # there are some participants with close to zero accuracy
+  # we assumae that these participants flipped the response key order (in their head)
+  # we could a) recode them or b) remove them - to make less assumptions we remove them  
+  # we do this at the top of this file
+  exclusion.list <- unique(sum.searches[sum.searches$acc.part < 10,]$respondent)
+  
+  searches <- searches[!(searches$respondent %in% exclusion.list),]
+  ratings <- searches[!(ratings$respondent %in% exclusion.list),]
   
   
 # save data frames
