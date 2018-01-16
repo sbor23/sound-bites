@@ -6,23 +6,23 @@ rm(list = ls())
 require(tidyverse)
 
 # load raw data
-load("../data/rawdata.Rdata")
+  load("../data/rawdata.Rdata")
 
 # remove respondents with NAs
-rawdata <- rawdata[!is.na(rawdata$responseTime),] 
-
+  rawdata <- rawdata[!is.na(rawdata$responseTime),] 
+  
 
 # remove .wav from stim_id
-rawdata$stim_id <- sub("(.*)\\.wav", "\\1", rawdata$stim_id)
+  rawdata$stim_id <- sub("(.*)\\.wav", "\\1", rawdata$stim_id)
 
 # split into ratings and searches
-ratings <- rawdata %>%
-  filter(event %in% c("valence_rating", "arousal_rating")) %>%
-  mutate(value = as.numeric(value))
+  ratings <- rawdata %>%
+    filter(event %in% c("valence_rating", "arousal_rating")) %>%
+    mutate(value = as.numeric(value))
 
-searches <- rawdata %>%
-  filter(event == "SearchResponse") %>%
-  separate(stim_id, c("sound", "visual"), sep = "-", fill = "left")
+  searches <- rawdata %>%
+    filter(event == "SearchResponse") %>%
+    separate(stim_id, c("sound", "visual"), sep = "-", fill = "left")
 
 # split stim_id into actual factors of the experiment:
 # salience: L1 = high, L2 = low
@@ -68,7 +68,6 @@ searches <- rawdata %>%
   
   searches <- searches[!(searches$respondent %in% exclusion.list),]
   ratings <- searches[!(ratings$respondent %in% exclusion.list),]
-  
   
 # save data frames
 save(ratings, file = "../data/ratings.Rdata")
