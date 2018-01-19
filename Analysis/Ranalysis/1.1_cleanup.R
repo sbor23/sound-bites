@@ -11,7 +11,6 @@ require(tidyverse)
 # remove respondents with NAs
   rawdata <- rawdata[!is.na(rawdata$responseTime),] 
   
-
 # remove .wav from stim_id
   rawdata$stim_id <- sub("(.*)\\.wav", "\\1", rawdata$stim_id)
 
@@ -29,9 +28,9 @@ require(tidyverse)
 # position: cen[..] = central, per[..] = peripheral
 # orientation: l[..] = left, r[..] = right
 # code "visual only" (ie without sound) into sound variable
-  searches <- searches %>%
+  searches <- 
+    searches %>%
     separate(visual, c("salience", "position", "orientation"), sep = "_") %>%
-  
 # recode some values
   mutate(salience = recode(salience,
                            L1 = "high",
@@ -43,10 +42,8 @@ require(tidyverse)
     grepl("[lL]", orientation) ~ "left",
     grepl("[rR]", orientation) ~ "right")) %>%
   mutate(sound = ifelse(is.na(sound), "visual only", sound)) %>%
-  
 # transform RTs into milliseconds
   mutate(responseTime = responseTime * 1000) %>%
-  
 # calculate accuracy
   mutate(accuracy = case_when(
     orientation == value ~ 1,
@@ -67,7 +64,7 @@ require(tidyverse)
   exclusion.list <- unique(sum.searches[sum.searches$acc.part < 10,]$respondent)
   
   searches <- searches[!(searches$respondent %in% exclusion.list),]
-  ratings <- searches[!(ratings$respondent %in% exclusion.list),]
+  ratings <- ratings[!(ratings$respondent %in% exclusion.list),]
   
 # save data frames
 save(ratings, file = "../data/ratings.Rdata")
